@@ -1,9 +1,6 @@
-/**
- * Main KodeChain client
- */
-
 import { Provider } from './Provider';
 import { Signer } from './Signer';
+import { GasManager } from '../gas';
 import {
     ClientConfig,
     NodeInfo,
@@ -16,6 +13,7 @@ import { CONSTANTS, DEFAULT_CONSENSUS, validateRequired } from '../utils';
 export class KodeChainClient {
     private provider: Provider;
     private signer: Signer;
+    public gas: GasManager;
     private config: ClientConfig;
     private connected: boolean = false;
 
@@ -37,6 +35,7 @@ export class KodeChainClient {
         });
 
         this.signer = new Signer();
+        this.gas = new GasManager(this);
     }
 
     /**
@@ -135,6 +134,13 @@ export class KodeChainClient {
      */
     getSigner(): Signer {
         return this.signer;
+    }
+
+    /**
+     * Get the gas manager instance
+     */
+    getGasManager(): GasManager {
+        return this.gas;
     }
 
     /**

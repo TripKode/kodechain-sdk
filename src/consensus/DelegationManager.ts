@@ -3,7 +3,7 @@
  */
 
 import { KodeChainClient } from '../core';
-import { Delegation, DelegationStats, TransactionReceipt } from '../types';
+import type { Delegation, DelegationStats, TransactionReceipt } from '../types';
 import { validateAddress, validateAmount } from '../utils';
 
 export class DelegationManager {

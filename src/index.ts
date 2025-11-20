@@ -29,5 +29,8 @@ export * from './transactions/TransactionReceipt';
 // Consensus
 export * from './consensus';
 
+// Gas
+export * from './gas';
+
 // Re-export main client as default
 export { KodeChainClient as default } from './core';

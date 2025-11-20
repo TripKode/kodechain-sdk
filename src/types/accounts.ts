@@ -19,16 +19,7 @@ export interface CriticalRecord {
     cost: number;
 }
 
-export interface BillingInfo {
-    usageCount: number;
-    totalCost: number;
-    paidAmount: number;
-    outstandingDebt: number;
-    billingPeriod: {
-        start: number;
-        end: number;
-    };
-}
+import { BillingInfo } from './gas';
 
 export interface PBFTState {
     criticalRecords: CriticalRecord[];

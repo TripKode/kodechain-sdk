@@ -3,7 +3,7 @@
  */
 
 import { KodeChainClient } from '../core';
-import { Validator, RegisterValidatorOptions, TransactionReceipt } from '../types';
+import type { Validator, RegisterValidatorOptions, TransactionReceipt } from '../types';
 import { validateAddress, validateRequired } from '../utils';
 
 export class ValidatorManager {

@@ -16,3 +16,4 @@ export * from './accounts';
 
 // Consensus types
 export * from './consensus';
+export * from './gas';

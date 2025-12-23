@@ -326,7 +326,7 @@ MIT License - Copyright (c) 2025 KodeChain
 
 ## Links
 
-- [Documentation](https://docs.kodechain.io)
+- [Documentation](https://docs.kodechain.site)
 - [GitHub](https://github.com/kodechain/web-sdk)
 - [NPM](https://www.npmjs.com/package/@kodechain/web-sdk)
 
@@ -334,4 +334,4 @@ MIT License - Copyright (c) 2025 KodeChain
 
 For issues and questions:
 - GitHub Issues: https://github.com/kodechain/web-sdk/issues
-- Email: dev@kodechain.io
+- Email: help@kodechain.site

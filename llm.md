@@ -2,7 +2,7 @@
 
 ## Descripción General
 
-**Paquete:** `@kodechain/web-sdk`  
+**Paquete:** `@kodechainnet/web-sdk`  
 **Versión:** 1.0.0  
 **Repository:** https://github.com/kodechain/web-sdk.git  
 **Node.js:** >=16.0.0
@@ -14,7 +14,7 @@ SDK oficial de JavaScript/TypeScript para la blockchain KodeChain. Soporta dual-
 ## Instalación
 
 ```bash
-npm install @kodechain/web-sdk
+npm install @kodechainnet/web-sdk
 ```
 
 ---
@@ -42,7 +42,7 @@ npm install @kodechain/web-sdk
 ### Inicialización del Cliente
 
 ```typescript
-import { KodeChainClient } from '@kodechain/web-sdk';
+import { KodeChainClient } from '@kodechainnet/web-sdk';
 
 const client = new KodeChainClient({
   nodeUrl: 'http://34.28.74.25:8084',
@@ -80,7 +80,7 @@ const health = await client.getHealth();
 ### Desplegar Contrato
 
 ```typescript
-import { ContractFactory } from '@kodechain/web-sdk';
+import { ContractFactory } from '@kodechainnet/web-sdk';
 
 const factory = new ContractFactory(client);
 
@@ -178,7 +178,7 @@ contract.off('Transfer');
 ### Crear Cuenta Inteligente
 
 ```typescript
-import { SmartAccountManager } from '@kodechain/web-sdk';
+import { SmartAccountManager } from '@kodechainnet/web-sdk';
 
 const accountManager = new SmartAccountManager(client);
 
@@ -274,7 +274,7 @@ const totalBalance = await account.getTotalBalance();
 ### Construir Transacción
 
 ```typescript
-import { TransactionBuilder } from '@kodechain/web-sdk';
+import { TransactionBuilder } from '@kodechainnet/web-sdk';
 
 const txBuilder = new TransactionBuilder(client);
 
@@ -297,7 +297,7 @@ console.log('TX Hash:', receipt.transactionHash);
 ### Gestionar Validadores
 
 ```typescript
-import { ValidatorManager, DelegationManager } from '@kodechain/web-sdk';
+import { ValidatorManager, DelegationManager } from '@kodechainnet/web-sdk';
 
 const validators = new ValidatorManager(client);
 const delegations = new DelegationManager(client);
@@ -367,7 +367,7 @@ import {
   GasEstimationError,
   ContractError,
   NetworkError,
-} from '@kodechain/web-sdk';
+} from '@kodechainnet/web-sdk';
 
 try {
   const tx = await contract.call('transfer', [recipient, amount], {
@@ -393,7 +393,7 @@ try {
 ### Validadores
 
 ```typescript
-import { validateAddress, validateBytecode, validateRequired } from '@kodechain/web-sdk';
+import { validateAddress, validateBytecode, validateRequired } from '@kodechainnet/web-sdk';
 
 // Validar dirección
 validateAddress('0x1234567890123456789012345678901234567890');
@@ -408,7 +408,7 @@ validateRequired(value, 'fieldName');
 ### Constantes
 
 ```typescript
-import { CONSTANTS, DEFAULT_CONSENSUS, DEFAULT_GAS_LIMIT } from '@kodechain/web-sdk';
+import { CONSTANTS, DEFAULT_CONSENSUS, DEFAULT_GAS_LIMIT } from '@kodechainnet/web-sdk';
 
 console.log('Timeout:', CONSTANTS.DEFAULT_TIMEOUT); // 30000
 console.log('Retries:', CONSTANTS.DEFAULT_RETRIES); // 3
@@ -593,6 +593,6 @@ npm run type-check
 
 - **Documentación:** https://docs.kodechain.site
 - **GitHub:** https://github.com/kodechain/web-sdk
-- **NPM:** https://www.npmjs.com/package/@kodechain/web-sdk
+- **NPM:** https://www.npmjs.com/package/@kodechainnet/web-sdk
 - **Issues:** https://github.com/kodechain/web-sdk/issues
 - **Email:** help@kodechain.site

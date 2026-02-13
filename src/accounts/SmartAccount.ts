@@ -24,15 +24,24 @@ export class SmartAccount {
         this.client = client;
     }
 
+    /**
+     * Get full account data
+     */
+    async getAccount(): Promise<any> {
+        const response = await this.client
+            .getProvider()
+            .get<{ account: any }>(`/api/smart-accounts/${this.address}`);
+        return response.account;
+    }
+
     // ==================== DPOS Operations ====================
 
     /**
      * Get DPOS state
      */
     async getDPOSState(): Promise<DPOSState> {
-        return this.client
-            .getProvider()
-            .get<DPOSState>(`/api/smart-accounts/${this.address}/dpos/state`);
+        const account = await this.getAccount();
+        return account.dposState;
     }
 
     /**
@@ -40,7 +49,7 @@ export class SmartAccount {
      */
     async getStakedAmount(): Promise<string> {
         const state = await this.getDPOSState();
-        return state.stakedAmount;
+        return (state.stakedAmount || 0).toString();
     }
 
     /**
@@ -51,10 +60,11 @@ export class SmartAccount {
         validateAmount(amount);
 
         return this.client.getProvider().post<TransactionReceipt>(
-            `/api/smart-accounts/${this.address}/dpos/delegate`,
+            `/api/staking/delegate/register`,
             {
-                validatorAddress,
-                amount,
+                delegate_address: validatorAddress,
+                stake_amount: parseFloat(amount),
+                delegate_address_source: this.address
             }
         );
     }
@@ -62,14 +72,11 @@ export class SmartAccount {
     /**
      * Undelegate from validator
      */
-    async undelegate(amount: string): Promise<TransactionReceipt> {
-        validateAmount(amount);
+    async undelegate(address: string): Promise<TransactionReceipt> {
+        validateAddress(address);
 
-        return this.client.getProvider().post<TransactionReceipt>(
-            `/api/smart-accounts/${this.address}/dpos/undelegate`,
-            {
-                amount,
-            }
+        return this.client.getProvider().delete(
+            `/api/staking/delegate/remove?address=${address}`
         );
     }
 
@@ -79,9 +86,18 @@ export class SmartAccount {
      * Get PBFT state
      */
     async getPBFTState(): Promise<PBFTState> {
-        return this.client
+        const account = await this.getAccount();
+        return account.pbftState;
+    }
+
+    /**
+     * Get account status (blocking info)
+     */
+    async getStatus(): Promise<any> {
+        const response = await this.client
             .getProvider()
-            .get<PBFTState>(`/api/smart-accounts/${this.address}/pbft/state`);
+            .get<{ status: any }>(`/api/smart-accounts/${this.address}/status`);
+        return response.status;
     }
 
     /**
@@ -89,7 +105,18 @@ export class SmartAccount {
      */
     async getCriticalRecords(): Promise<CriticalRecord[]> {
         const state = await this.getPBFTState();
-        return state.criticalRecords;
+        return state.criticalRecords || [];
+    }
+
+    /**
+     * Get critical record history with pagination
+     */
+    async getRecordHistory(options?: { limit?: number; offset?: number; type?: string }): Promise<any> {
+        const response = await this.client.getProvider().get<{ records: any[]; total: number }>(
+            `/api/smart-accounts/${this.address}/records/history`,
+            { params: options }
+        );
+        return response;
     }
 
     /**
@@ -97,9 +124,10 @@ export class SmartAccount {
      */
     async registerCriticalRecord(data: any): Promise<TransactionReceipt> {
         return this.client.getProvider().post<TransactionReceipt>(
-            `/api/smart-accounts/${this.address}/pbft/records`,
+            `/api/smart-accounts/${this.address}/records`,
             {
-                data,
+                recordType: data.type || 'generic',
+                content: typeof data === 'string' ? data : JSON.stringify(data),
             }
         );
     }
@@ -108,8 +136,10 @@ export class SmartAccount {
      * Get monthly billing information
      */
     async getMonthlyBilling(): Promise<BillingInfo> {
-        const state = await this.getPBFTState();
-        return state.monthlyBilling;
+        const response = await this.client
+            .getProvider()
+            .get<{ billingInfo: BillingInfo }>(`/api/smart-accounts/${this.address}/billing`);
+        return response.billingInfo;
     }
 
     /**
@@ -119,9 +149,10 @@ export class SmartAccount {
         validateAmount(amount);
 
         return this.client.getProvider().post<TransactionReceipt>(
-            `/api/smart-accounts/${this.address}/pbft/pay-billing`,
+            `/api/smart-accounts/${this.address}/payments`,
             {
-                amount,
+                amount: parseInt(amount),
+                transactionHash: 'internal_sdk_payment',
             }
         );
     }
@@ -132,9 +163,8 @@ export class SmartAccount {
      * Get interoperability settings
      */
     async getInteropSettings(): Promise<InteropSettings> {
-        return this.client
-            .getProvider()
-            .get<InteropSettings>(`/api/smart-accounts/${this.address}/interop/settings`);
+        const account = await this.getAccount();
+        return account.interopSettings;
     }
 
     /**
@@ -160,17 +190,15 @@ export class SmartAccount {
      */
     async transferCrossChain(
         amount: string,
-        fromChain: ConsensusType,
-        toChain: ConsensusType
+        direction: 'to_dpos' | 'from_dpos'
     ): Promise<TransactionReceipt> {
         validateAmount(amount);
 
         return this.client.getProvider().post<TransactionReceipt>(
-            `/api/smart-accounts/${this.address}/interop/transfer`,
+            `/api/smart-accounts/${this.address}/transfer`,
             {
-                amount,
-                fromChain,
-                toChain,
+                amount: parseInt(amount),
+                direction,
             }
         );
     }
@@ -185,13 +213,21 @@ export class SmartAccount {
     }
 
     /**
-     * Get total balance across both chains
+     * Get total balance across all tokens
      */
     async getTotalBalance(): Promise<string> {
-        const response = await this.client
-            .getProvider()
-            .get<{ totalBalance: string }>(`/api/smart-accounts/${this.address}/balance/total`);
+        const account = await this.getAccount();
+        if (!account || !account.balances) {
+            return '0';
+        }
 
-        return response.totalBalance;
+        let total = 0;
+        for (const symbol in account.balances) {
+            const b = account.balances[symbol];
+            if (b && b.currentBalance) {
+                total += b.currentBalance;
+            }
+        }
+        return total.toString();
     }
 }

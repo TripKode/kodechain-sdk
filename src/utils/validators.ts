@@ -9,7 +9,7 @@ import { InvalidAddressError, InvalidAmountError, ValidationError } from '../err
  * Check if address is valid
  */
 export function isValidAddress(address: string): boolean {
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
+    return /^0x[a-fA-F0-9]{40,64}$/.test(address);
 }
 
 /**

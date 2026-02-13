@@ -33,40 +33,51 @@ export interface GasEstimation {
     };
 }
 
-export interface BillingInfo {
-    address: string;
-    current: {
-        period: string; // "2025-01"
-        usageCount: number;
-        totalCost: string;
-        paidAmount: string;
-        outstandingDebt: string;
-    };
-    status: {
-        isBlocked: boolean;
-        blockedAt?: number;
-        blockReason?: string;
-    };
-    limits: {
-        maxDebtLimit: string;
-        blockingThreshold: string;
-    };
-    history: BillingRecord[];
+export interface MonthlyBilling {
+    currentMonth: string;
+    usageCount: number;
+    totalCost: number;
+    paidAmount: number;
+    outstandingDebt: number;
+    lastPaymentDate?: string;
+    gracePeriodEnd?: string;
+}
+
+export interface PaymentRecord {
+    id: string;
+    amount: number;
+    month: string;
+    paymentDate: string;
+    transactionHash: string;
+    status: string;
+}
+
+export interface PBFTUsageStats {
+    totalRecords: number;
+    recordsThisMonth: number;
+    totalCost: number;
+    averageCost: number;
+    lastRecordDate?: string;
 }
 
 export interface BillingRecord {
     period: string;
-    totalCost: string;
+    usageCount: number;
+    totalCost: string; // Using string for big.Int
     paidAmount: string;
-    status: 'PAID' | 'PARTIAL' | 'UNPAID';
-    paymentTxHash?: string;
-    timestamp: number;
+    paymentDate: number;
+    status: string;
+}
+
+export interface BillingInfo extends MonthlyBilling {
+    paymentHistory: PaymentRecord[];
+    usageStats: PBFTUsageStats;
 }
 
 export interface PaymentReceipt {
     success: boolean;
-    amountPaid: string;
-    remainingDebt: string;
+    amountPaid: number;
+    remainingDebt: number;
     newDPOSBalance: string;
     isBlocked: boolean;
     transactionHash: string;

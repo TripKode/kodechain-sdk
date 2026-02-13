@@ -3,7 +3,7 @@
  */
 
 import { KodeChainClient } from '../core';
-import type { Delegation, DelegationStats, TransactionReceipt } from '../types';
+
 import { validateAddress, validateAmount } from '../utils';
 
 export class DelegationManager {
@@ -14,21 +14,21 @@ export class DelegationManager {
     }
 
     /**
-     * Delegate actively to a validator (physical validator)
+     * Register as a delegate (active delegation)
      */
-    async delegateActive(
-        validatorAddress: string,
-        amount: string,
-        from: string
-    ): Promise<TransactionReceipt> {
-        validateAddress(validatorAddress);
-        validateAddress(from);
-        validateAmount(amount);
+    async registerDelegate(
+        delegateAddress: string,
+        stakeAmount: number,
+        name?: string,
+        publicKey?: string
+    ): Promise<any> {
+        validateAddress(delegateAddress);
 
-        return this.client.getProvider().post<TransactionReceipt>('/api/delegations/active', {
-            validatorAddress,
-            amount,
-            from,
+        return this.client.getProvider().post('/api/staking/delegate/register', {
+            delegate_address: delegateAddress,
+            stake_amount: stakeAmount,
+            delegate_name: name,
+            public_key: publicKey,
         });
     }
 
@@ -36,96 +36,102 @@ export class DelegationManager {
      * Delegate passively to a validator
      */
     async delegatePassive(
+        delegatorAddress: string,
         validatorAddress: string,
-        amount: string,
-        from: string
-    ): Promise<TransactionReceipt> {
+        amount: string
+    ): Promise<any> {
+        validateAddress(delegatorAddress);
         validateAddress(validatorAddress);
-        validateAddress(from);
         validateAmount(amount);
 
-        return this.client.getProvider().post<TransactionReceipt>('/api/delegations/passive', {
-            validatorAddress,
-            amount,
-            from,
+        return this.client.getProvider().post('/api/passive-delegation/create', {
+            delegator_address: delegatorAddress,
+            validator_address: validatorAddress,
+            stake_amount: amount,
         });
     }
 
     /**
-     * Undelegate from a validator
+     * Remove an active delegate registration
      */
-    async undelegate(
-        validatorAddress: string,
-        amount: string,
-        from: string
-    ): Promise<TransactionReceipt> {
-        validateAddress(validatorAddress);
-        validateAddress(from);
-        validateAmount(amount);
-
-        return this.client.getProvider().post<TransactionReceipt>('/api/delegations/undelegate', {
-            validatorAddress,
-            amount,
-            from,
-        });
-    }
-
-    /**
-     * Get delegations for an address
-     */
-    async getDelegations(address: string): Promise<Delegation[]> {
+    async removeActiveDelegate(address: string): Promise<any> {
         validateAddress(address);
+        return this.client.getProvider().delete(`/api/staking/delegate/remove?address=${address}`);
+    }
 
+    /**
+     * Remove a passive delegation
+     */
+    async removePassiveDelegation(delegationId: string): Promise<any> {
+        return this.client.getProvider().post('/api/passive-delegation/remove', {
+            delegation_id: delegationId,
+        });
+    }
+
+    /**
+     * Get all active delegates
+     */
+    async getActiveDelegates(): Promise<any[]> {
         const response = await this.client
             .getProvider()
-            .get<{ delegations: Delegation[] }>(`/api/delegations/${address}`);
+            .get<{ delegates: any[] }>('/api/staking/delegate/list');
+        return response.delegates;
+    }
 
+    /**
+     * Get passive delegations for a delegator
+     */
+    async getPassiveByDelegator(address: string): Promise<any[]> {
+        validateAddress(address);
+        const response = await this.client
+            .getProvider()
+            .get<{ delegations: any[] }>(`/api/passive-delegation/by-delegator?delegator_address=${address}`);
         return response.delegations;
     }
 
     /**
-     * Get delegations to a specific validator
+     * Get passive delegations for a validator
      */
-    async getDelegationsToValidator(validatorAddress: string): Promise<Delegation[]> {
+    async getPassiveByValidator(address: string): Promise<any[]> {
+        validateAddress(address);
+        const response = await this.client
+            .getProvider()
+            .get<{ delegations: any[] }>(`/api/passive-delegation/by-validator?validator_address=${address}`);
+        return response.delegations;
+    }
+
+    /**
+     * Get validator delegation summary (passive)
+     */
+    async getValidatorSummary(address: string): Promise<any> {
+        validateAddress(address);
+        return this.client
+            .getProvider()
+            .get(`/api/passive-delegation/validator-summary?validator_address=${address}`);
+    }
+
+    /**
+     * Get staking statistics
+     */
+    async getStakingStats(): Promise<any> {
+        return this.client.getProvider().get('/api/staking/stats');
+    }
+
+    /**
+     * Get passive delegation statistics
+     */
+    async getPassiveStats(): Promise<any> {
+        return this.client.getProvider().get('/api/passive-delegation/stats');
+    }
+
+    /**
+     * Distribute rewards to passive delegators
+     */
+    async distributePassiveRewards(validatorAddress: string, totalReward: string): Promise<any> {
         validateAddress(validatorAddress);
-
-        const response = await this.client
-            .getProvider()
-            .get<{ delegations: Delegation[] }>(`/api/validators/${validatorAddress}/delegations`);
-
-        return response.delegations;
-    }
-
-    /**
-     * Get delegation statistics
-     */
-    async getStats(): Promise<DelegationStats> {
-        return this.client.getProvider().get<DelegationStats>('/api/delegations/stats');
-    }
-
-    /**
-     * Get active delegations for an address
-     */
-    async getActiveDelegations(address: string): Promise<Delegation[]> {
-        const delegations = await this.getDelegations(address);
-        return delegations.filter((d) => d.type === 'active');
-    }
-
-    /**
-     * Get passive delegations for an address
-     */
-    async getPassiveDelegations(address: string): Promise<Delegation[]> {
-        const delegations = await this.getDelegations(address);
-        return delegations.filter((d) => d.type === 'passive');
-    }
-
-    /**
-     * Get total delegated amount for an address
-     */
-    async getTotalDelegated(address: string): Promise<string> {
-        const delegations = await this.getDelegations(address);
-        return delegations.reduce((total, d) => {
-            return (parseFloat(total) + parseFloat(d.amount)).toString();
-        }, '0');
+        return this.client.getProvider().post('/api/passive-delegation/distribute-rewards', {
+            validator_address: validatorAddress,
+            total_reward: totalReward,
+        });
     }
 }

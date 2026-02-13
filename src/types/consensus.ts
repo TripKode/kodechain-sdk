@@ -41,5 +41,8 @@ export interface RegisterValidatorOptions {
     name: string;
     consensusType: ConsensusType;
     stakeAmount: string;
-    commission: number;
+    commission?: number;
+    description?: string;
+    httpUrl?: string;
+    nodeId?: string;
 }

@@ -3,10 +3,12 @@
  */
 
 export interface DPOSState {
-    stakedAmount: string;
-    delegatedAmount: string;
+    stakedAmount: number;
+    delegatedAmount: number;
     delegationTarget: string;
-    isValidator: boolean;
+    stakingContracts: string[];
+    isValidator?: boolean;
+    validatorRewards?: number;
     transactionCount: number;
     totalVolume: number;
 }
@@ -14,18 +16,24 @@ export interface DPOSState {
 export interface CriticalRecord {
     id: string;
     type: string;
-    data: any;
-    timestamp: number;
+    content: string;
+    hash: string;
+    timestamp: string;
     cost: number;
+    status: string;
 }
 
-import { BillingInfo } from './gas';
+import { MonthlyBilling, PaymentRecord, PBFTUsageStats } from './gas';
 
 export interface PBFTState {
     criticalRecords: CriticalRecord[];
     recordCount: number;
-    monthlyBilling: BillingInfo;
+    monthlyBilling: MonthlyBilling;
+    paymentHistory: PaymentRecord[];
     isBlocked: boolean;
+    blockReason: string;
+    blockedSince?: string;
+    usageStats: PBFTUsageStats;
 }
 
 export interface InteropSettings {
@@ -33,6 +41,9 @@ export interface InteropSettings {
     maxTransferAmount: number;
     autoPaymentEnabled: boolean;
     paymentThreshold: number;
+    notificationsEnabled: boolean;
+    emailNotifications: boolean;
+    requireConfirmation: boolean;
     maxDailyRecords: number;
 }
 

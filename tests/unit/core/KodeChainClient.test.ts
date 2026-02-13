@@ -54,26 +54,40 @@ describe('KodeChainClient', () => {
 
     describe('getNodeInfo', () => {
         it('should fetch node info', async () => {
-            const mockInfo = { version: '1.0.0', chainId: 'kodechain' };
-            mockProvider.get.mockResolvedValue(mockInfo);
+            const mockInfo = { node_id: 'node1', node_type: 'validator' };
+            mockProvider.get.mockResolvedValue({ status: mockInfo });
 
             const result = await client.getNodeInfo();
             expect(result).toEqual(mockInfo);
-            expect(mockProvider.get).toHaveBeenCalledWith('/api/node/info');
+            expect(mockProvider.get).toHaveBeenCalledWith('/api/node/status');
+        });
+    });
+
+    describe('getHealth', () => {
+        it('should fetch health status', async () => {
+            const mockHealth = { status: 'healthy', timestamp: '2024-01-01' };
+            mockProvider.get.mockResolvedValue({ health: mockHealth });
+
+            const result = await client.getHealth();
+            expect(result).toEqual(mockHealth);
+            expect(mockProvider.get).toHaveBeenCalledWith('/api/node/health');
         });
     });
 
     describe('getBalance', () => {
         it('should fetch balance for address', async () => {
             const address = '0x123';
-            const balance = '1000';
-            mockProvider.get.mockResolvedValue({ balance });
+            const mockAccount = {
+                balances: {
+                    'KDC': { amount: '1000' }
+                }
+            };
+            mockProvider.get.mockResolvedValue({ account: mockAccount });
 
             const result = await client.getBalance(address);
-            expect(result).toEqual(balance);
+            expect(result).toEqual('1000');
             expect(mockProvider.get).toHaveBeenCalledWith(
-                `/api/accounts/${address}/balance`,
-                { params: { chain: 'DPOS' } }
+                `/api/smart-accounts/${address}`
             );
         });
     });

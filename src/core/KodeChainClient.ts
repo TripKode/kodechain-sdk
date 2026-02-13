@@ -1,6 +1,9 @@
 import { Provider } from './Provider';
 import { Signer } from './Signer';
 import { GasManager } from '../gas';
+import { NetworkManager } from './NetworkManager';
+import { KDCManager } from './KDCManager';
+import { AuthManager } from './AuthManager';
 import {
     ClientConfig,
     NodeInfo,
@@ -10,10 +13,20 @@ import {
 } from '../types';
 import { CONSTANTS, DEFAULT_CONSENSUS, validateRequired } from '../utils';
 
+import { ValidatorManager } from '../consensus/ValidatorManager';
+import { DVMManager } from './DVMManager';
+import { SmartAccountManager } from './SmartAccountManager';
+
 export class KodeChainClient {
     private provider: Provider;
     private signer: Signer;
     public gas: GasManager;
+    public network: NetworkManager;
+    public kdc: KDCManager;
+    public auth: AuthManager;
+    public validators: ValidatorManager;
+    public dvm: DVMManager;
+    public smartAccounts: SmartAccountManager;
     private config: ClientConfig;
     private connected: boolean = false;
 
@@ -36,6 +49,12 @@ export class KodeChainClient {
 
         this.signer = new Signer();
         this.gas = new GasManager(this);
+        this.network = new NetworkManager(this);
+        this.kdc = new KDCManager(this);
+        this.auth = new AuthManager(this);
+        this.validators = new ValidatorManager(this);
+        this.dvm = new DVMManager(this);
+        this.smartAccounts = new SmartAccountManager(this);
     }
 
     /**
@@ -69,14 +88,16 @@ export class KodeChainClient {
      * Get node information
      */
     async getNodeInfo(): Promise<NodeInfo> {
-        return this.provider.get<NodeInfo>('/api/node/info');
+        const response = await this.provider.get<{ status: NodeInfo }>('/api/node/status');
+        return response.status;
     }
 
     /**
      * Get node health status
      */
     async getHealth(): Promise<HealthStatus> {
-        return this.provider.get<HealthStatus>('/api/health');
+        const response = await this.provider.get<{ health: HealthStatus }>('/api/node/health');
+        return response.health;
     }
 
     /**
@@ -84,10 +105,24 @@ export class KodeChainClient {
      */
     async getBlockHeight(chain?: ConsensusType): Promise<number> {
         const consensus = chain || this.config.defaultConsensus!;
-        const response = await this.provider.get<{ height: number }>(
-            `/api/blockchain/${consensus.toLowerCase()}/height`
-        );
-        return response.height;
+
+        // Try /api/sync/height first as it's the standard for the sync layer
+        try {
+            const response = await this.provider.get<{ height: number }>(`/api/sync/height?chain=${consensus.toLowerCase()}`);
+            return response.height;
+        } catch {
+            // Fallback to blockchain status
+            const status = await this.getBlockchainStatus();
+            const chainInfo = consensus === 'DPOS' ? status.status.dpos_chain : status.status.pbft_chain;
+            return chainInfo.block_height;
+        }
+    }
+
+    /**
+     * Get blockchain status
+     */
+    async getBlockchainStatus(): Promise<any> {
+        return this.provider.get('/api/blockchain/status');
     }
 
     /**
@@ -96,7 +131,7 @@ export class KodeChainClient {
     async getBlock(height: number, chain?: ConsensusType): Promise<Block> {
         const consensus = chain || this.config.defaultConsensus!;
         return this.provider.get<Block>(
-            `/api/blockchain/${consensus.toLowerCase()}/blocks/${height}`
+            `/api/blockchain/block?number=${height}&chain=${consensus.toLowerCase()}`
         );
     }
 
@@ -105,21 +140,32 @@ export class KodeChainClient {
      */
     async getLatestBlock(chain?: ConsensusType): Promise<Block> {
         const consensus = chain || this.config.defaultConsensus!;
-        return this.provider.get<Block>(
-            `/api/blockchain/${consensus.toLowerCase()}/blocks/latest`
+        const response = await this.provider.get<{ blocks: Block[] }>(
+            `/api/blockchain/all-blocks?limit=1&chain=${consensus.toLowerCase()}`
         );
+        return response.blocks[0];
     }
 
     /**
      * Get balance for an address
      */
-    async getBalance(address: string, chain?: ConsensusType): Promise<string> {
-        const consensus = chain || this.config.defaultConsensus;
-        const response = await this.provider.get<{ balance: string }>(
-            `/api/accounts/${address}/balance`,
-            { params: { chain: consensus } }
+    async getBalance(address: string, _chain?: ConsensusType): Promise<string> {
+        const response = await this.provider.get<{ account: any }>(
+            `/api/smart-accounts/${address}`
         );
-        return response.balance;
+
+        const account = response.account;
+        if (!account || !account.balances) {
+            return '0';
+        }
+
+        // KDC is the native token
+        const b = account.balances['KDC'] || account.balances['kdc'];
+        if (b && b.amount) {
+            return b.amount.toString();
+        }
+
+        return '0';
     }
 
     /**

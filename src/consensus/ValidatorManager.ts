@@ -19,7 +19,7 @@ export class ValidatorManager {
     async list(): Promise<Validator[]> {
         const response = await this.client
             .getProvider()
-            .get<{ validators: Validator[] }>('/api/validators');
+            .get<{ validators: Validator[] }>('/api/validator/list');
 
         return response.validators;
     }
@@ -29,7 +29,8 @@ export class ValidatorManager {
      */
     async get(address: string): Promise<Validator> {
         validateAddress(address);
-        return this.client.getProvider().get<Validator>(`/api/validators/${address}`);
+        const response = await this.client.getProvider().get<{ validator: Validator }>(`/api/validator/${address}`);
+        return response.validator;
     }
 
     /**
@@ -41,12 +42,14 @@ export class ValidatorManager {
         validateRequired(options.stakeAmount, 'stakeAmount');
         validateAddress(options.address);
 
-        return this.client.getProvider().post<TransactionReceipt>('/api/validators/register', {
-            address: options.address,
-            name: options.name,
-            consensusType: options.consensusType,
-            stakeAmount: options.stakeAmount,
-            commission: options.commission,
+        return this.client.getProvider().post<TransactionReceipt>('/api/validator/register', {
+            validator_address: options.address,
+            validator_name: options.name,
+            consensus_type: options.consensusType,
+            stake_amount: options.stakeAmount,
+            description: options.description || '',
+            http_url: options.httpUrl || '',
+            node_id: options.nodeId || '',
         });
     }
 
@@ -57,7 +60,9 @@ export class ValidatorManager {
         validateAddress(address);
         return this.client
             .getProvider()
-            .post<TransactionReceipt>(`/api/validators/${address}/activate`);
+            .post<TransactionReceipt>(`/api/validator/activate`, {
+                validator_address: address
+            });
     }
 
     /**
@@ -67,23 +72,85 @@ export class ValidatorManager {
         validateAddress(address);
         return this.client
             .getProvider()
-            .post<TransactionReceipt>(`/api/validators/${address}/deactivate`);
+            .post<TransactionReceipt>(`/api/validator/deactivate`, {
+                validator_address: address
+            });
+    }
+
+    /**
+     * Load validator pool from genesis
+     */
+    async loadPool(): Promise<any> {
+        return this.client.getProvider().post('/api/validator/load-pool');
+    }
+
+    /**
+     * Get validator pool info
+     */
+    async getPool(): Promise<any> {
+        return this.client.getProvider().get('/api/validator/pool');
+    }
+
+    /**
+     * Get bootstrap node info
+     */
+    async getBootstrap(): Promise<any> {
+        return this.client.getProvider().get('/api/validator/bootstrap');
+    }
+
+    /**
+     * Activate bootstrap node
+     */
+    async activateBootstrap(): Promise<any> {
+        return this.client.getProvider().post('/api/validator/bootstrap/activate');
     }
 
     /**
      * Get active validators
      */
     async getActive(): Promise<Validator[]> {
-        const validators = await this.list();
-        return validators.filter((v) => v.isActive);
+        const response = await this.client.getProvider().get<{ validators: Validator[] }>('/api/staking/validators/active');
+        return response.validators;
     }
 
     /**
      * Get validators by consensus type
      */
     async getByConsensus(consensusType: 'DPOS' | 'PBFT'): Promise<Validator[]> {
-        const validators = await this.list();
-        return validators.filter((v) => v.consensusType === consensusType);
+        const response = await this.client.getProvider().get<{ validators: Validator[] }>(`/api/staking/validators/active?consensus_type=${consensusType}`);
+        return response.validators;
+    }
+
+    /**
+     * Get passive delegation statistics
+     */
+    async getPassiveDelegationStats(): Promise<any> {
+        return this.client.getProvider().get('/api/passive-delegation/stats');
+    }
+
+    /**
+     * Create a passive delegation
+     */
+    async createPassiveDelegation(delegatorAddress: string, validatorAddress: string, amount: string): Promise<any> {
+        return this.client.getProvider().post('/api/passive-delegation/create', {
+            delegator_address: delegatorAddress,
+            validator_address: validatorAddress,
+            stake_amount: amount
+        });
+    }
+
+    /**
+     * Get distribution of rewards
+     */
+    async getRewards(): Promise<any> {
+        return this.client.getProvider().get('/api/staking/rewards');
+    }
+
+    /**
+     * Trigger reward distribution (privileged)
+     */
+    async distributeRewards(): Promise<any> {
+        return this.client.getProvider().post('/api/rewards/distribute');
     }
 
     /**

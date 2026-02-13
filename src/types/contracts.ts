@@ -21,21 +21,23 @@ export interface ABIEntry {
 export type ABI = ABIEntry[];
 
 export interface DeployOptions {
-    bytecode: string;
-    abi?: ABI;
-    creator: string;
+    bytecode?: string; // Optional if provided separately
+    abi?: any;
+    creator?: string;
     constructorArgs?: any[];
     name?: string;
     version?: string;
+    description?: string;
+    initParams?: string;
+    value?: string;
     gasLimit?: number;
     gasPrice?: number;
-    value?: number;
     consensus?: ConsensusType;
 }
 
 export interface CallOptions {
-    caller: string;
-    value?: number;
+    caller?: string;
+    value?: string;
     gasLimit?: number;
     gasPrice?: number;
     consensus?: ConsensusType;
@@ -63,7 +65,11 @@ export interface ContractInfo {
     deployedAt: number;
     name?: string;
     version?: string;
-    consensus: ConsensusType;
+    consensus?: ConsensusType;
+    type?: string;
+    is_active?: boolean;
+    functions?: any[];
+    events?: any[];
 }
 
 export interface ContractEvent {

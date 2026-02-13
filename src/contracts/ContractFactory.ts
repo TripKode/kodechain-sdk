@@ -25,21 +25,24 @@ export class ContractFactory {
      * Deploy a new contract
      */
     async deploy(options: DeployOptions): Promise<Contract> {
-        validateRequired(options.bytecode, 'bytecode');
-        validateRequired(options.creator, 'creator');
-        validateBytecode(options.bytecode);
-        validateAddress(options.creator);
+        const bytecode = options.bytecode!;
+        const creator = options.creator!;
+
+        validateRequired(bytecode, 'bytecode');
+        validateRequired(creator, 'creator');
+        validateBytecode(bytecode);
+        validateAddress(creator);
 
         const deployData = {
-            bytecode: options.bytecode,
+            bytecode,
             abi: options.abi,
-            creator: options.creator,
+            creator,
             constructorArgs: options.constructorArgs || [],
             name: options.name,
             version: options.version,
             gasLimit: options.gasLimit || CONSTANTS.DEFAULT_GAS_LIMIT,
             gasPrice: options.gasPrice || CONSTANTS.DEFAULT_GAS_PRICE,
-            value: options.value || 0,
+            value: options.value ? parseFloat(options.value.toString()) : 0,
             consensus: options.consensus || DEFAULT_CONSENSUS,
         };
 
@@ -89,8 +92,9 @@ export class ContractFactory {
      * Estimate gas for contract deployment
      */
     async estimateDeployGas(options: DeployOptions): Promise<number> {
-        validateRequired(options.bytecode, 'bytecode');
-        validateBytecode(options.bytecode);
+        const bytecode = options.bytecode!;
+        validateRequired(bytecode, 'bytecode');
+        validateBytecode(bytecode);
 
         const estimateData = {
             bytecode: options.bytecode,

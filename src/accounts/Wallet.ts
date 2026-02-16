@@ -46,10 +46,41 @@ export class Wallet {
     }
 
     /**
-     * Compatibility helper: derived from private key (seed)
+     * Import wallet from full secret key (ML-DSA-65 secret key bytes)
+     */
+    static fromSecretKey(secretKeyHex: string, client: KodeChainClient): Wallet {
+        const secretKeyBytes = typeof secretKeyHex === 'string'
+            ? Buffer.from(secretKeyHex.startsWith('0x') ? secretKeyHex.slice(2) : secretKeyHex, 'hex')
+            : secretKeyHex;
+
+        // ML-DSA-65 secret key is 4032 bytes
+        if (secretKeyBytes.length !== 4032) {
+            throw new Error('ML-DSA-65 secret key must be 4032 bytes.');
+        }
+
+        // Derive public key from secret key using ML-DSA-65
+        const publicKey = crypto.ml_dsa65.getPublicKey(secretKeyBytes);
+        const address = generateQuantumHashHex(publicKey);
+
+        return new Wallet(address, client, publicKey, secretKeyBytes);
+    }
+
+    /**
+     * Compatibility helper: Try to import from either seed (32 bytes) or full secret key (4032 bytes)
      */
     static fromPrivateKey(privateKey: string, client: KodeChainClient): Wallet {
-        return this.fromSeed(privateKey, client);
+        const keyBytes = typeof privateKey === 'string'
+            ? Buffer.from(privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey, 'hex')
+            : privateKey;
+
+        // Check if it's a seed (32 bytes) or full secret key (4032 bytes)
+        if (keyBytes.length === 32) {
+            return this.fromSeed(privateKey, client);
+        } else if (keyBytes.length === 4032) {
+            return this.fromSecretKey(privateKey, client);
+        } else {
+            throw new Error(`Invalid private key length: ${keyBytes.length} bytes. Expected 32 (seed) or 4032 (secret key).`);
+        }
     }
 
     /**
